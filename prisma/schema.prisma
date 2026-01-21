@@ -1,0 +1,172 @@
+// Archimedes Prep - SAT Tutoring Platform
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================
+// NextAuth.js Required Models
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // App relations
+  testAttempts      TestAttempt[]
+  tutoringSessions  TutoringSession[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// SAT Test Catalog
+// ============================================
+
+// Test catalog (SAT Practice Test 1, 2, etc.)
+model Test {
+  id             String   @id @default(cuid())
+  name           String   // "SAT Practice Test 1"
+  testType       String   // "SAT", "ACT", "GRE"
+  version        String?  // "2023", "Official Guide 2024"
+  totalQuestions Int
+  sections       String   // JSON: ["Math No Calculator", "Math Calculator"]
+  createdAt      DateTime @default(now())
+
+  questions Question[]
+  attempts  TestAttempt[]
+}
+
+// Individual questions
+model Question {
+  id             String  @id @default(cuid())
+  testId         String
+  questionNumber Int     // 1-58 for SAT Math
+  section        String  // "Math No Calculator" or "Math Calculator"
+  correctAnswer  String  // "A", "B", "C", "D", or numerical answer
+
+  // Question content for AI context
+  questionText  String  // Full question text
+  answerChoices String? // JSON: {"A": "...", "B": "...", "C": "...", "D": "..."}
+  hasImage      Boolean @default(false)
+  imageUrl      String?
+
+  // Metadata for analytics
+  topic      String? // "Algebra", "Geometry", "Data Analysis"
+  difficulty String? // "Easy", "Medium", "Hard"
+  skill      String? // "Linear equations", "Triangle properties"
+
+  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@unique([testId, questionNumber])
+  @@index([testId])
+  @@index([topic])
+}
+
+// ============================================
+// Student Test Attempts & Answers
+// ============================================
+
+// Student test attempts
+model TestAttempt {
+  id             String    @id @default(cuid())
+  userId         String
+  testId         String
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  score          Int?      // Number correct
+  totalQuestions Int?
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test     Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  answers  Answer[]
+  sessions TutoringSession[]
+
+  @@index([userId])
+  @@index([testId])
+}
+
+// Individual answer submissions
+model Answer {
+  id            String  @id @default(cuid())
+  attemptId     String
+  questionId    String
+  studentAnswer String  // What they answered
+  isCorrect     Boolean
+
+  attempt  TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([isCorrect])
+}
+
+// ============================================
+// AI Tutoring Sessions
+// ============================================
+
+model TutoringSession {
+  id          String    @id @default(cuid())
+  userId      String
+  attemptId   String
+  questionIds String    // JSON array of question IDs to review
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  chatHistory String?   // JSON array of messages
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([attemptId])
+}
