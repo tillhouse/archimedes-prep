@@ -1,0 +1,9 @@
+{
+  "id": "sat-test-4",
+  "testType": "SAT",
+  "name": "SAT Practice Test 4",
+  "slug": "sat-test-4",
+  "pdfUrl": "https://satsuite.collegeboard.org/media/pdf/sat-practice-test-4.pdf",
+  "answerPdfUrl": "https://satsuite.collegeboard.org/media/pdf/sat-practice-test-4-answer-explanations.pdf",
+  "scoringPdfUrl": "https://satsuite.collegeboard.org/media/pdf/scoring-sat-practice-test-4.pdf"
+}

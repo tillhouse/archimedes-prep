@@ -8,10 +8,13 @@ export default defineConfig({
   datasource: {
     url: process.env.DATABASE_URL ?? "file:./dev.db",
   },
+  migrations: {
+    seed: "npx tsx prisma/seed.ts",
+  },
   migrate: {
     adapter: async () => {
-      const { PrismaBetterSQLite3 } = await import("@prisma/adapter-better-sqlite3");
-      return new PrismaBetterSQLite3({
+      const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
+      return new PrismaBetterSqlite3({
         url: process.env.DATABASE_URL ?? "file:./dev.db",
       });
     },
